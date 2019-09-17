@@ -5,7 +5,7 @@ DEBUG = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'transaction_app',
+        'NAME': 'transaction_db',
         'USER': 'lilit',
         'PASSWORD': '123456',
         'HOST': '127.0.0.1',

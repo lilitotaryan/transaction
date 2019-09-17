@@ -34,14 +34,13 @@ class VivaroUserLoginSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         pass
 
-    @staticmethod
     def authentication(self, validated_data):
         try:
             user = VivaroUser.objects.get(username=validated_data.get('username'))
             if user.check_password(validated_data.get('password')):
                 user.is_authenticated = True
                 user.save()
-                return True
+                return user
             return False
         except VivaroUser.DoesNotExist:
             return False

@@ -7,7 +7,7 @@ class VivaroUserManager(models.Manager):
     _password = None
 
     def _set_password(self, password):
-        self._password = make_password(password)
+        self._password = make_password(password, salt="salt")
 
     def _create_user(self, **other):
         username = other.get('username')
@@ -41,9 +41,6 @@ class VivaroUserManager(models.Manager):
         other.setdefault("is_partner", True)
         return self._create_user(**other)
 
-    def check_password(self, password):
-        return make_password(password) == make_password(self._password)
-
 
 class VivaroUser(models.Model):
     name = models.CharField(max_length=100)
@@ -58,3 +55,10 @@ class VivaroUser(models.Model):
     is_user = models.BooleanField(default=False)
     is_partner = models.BooleanField(default=False)
     objects = VivaroUserManager()
+
+    def check_password(self, password):
+        return make_password(password, salt="salt") == self.password
+
+
+class Session(models.Model):
+    pass
