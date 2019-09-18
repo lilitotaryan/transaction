@@ -44,13 +44,12 @@ class VivaroUserManager(models.Manager):
 
 class VivaroUser(models.Model):
     name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=150)
     username = models.CharField(max_length=100, blank=False, default=None, unique=True)
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
-    balance = models.IntegerField(default=0)
-    bonus = models.FloatField(default=0.0)
+    balance = models.FloatField(default=0.0)
+    bonus = models.IntegerField(default=0)
     is_authenticated = models.BooleanField(default=False)
     is_user = models.BooleanField(default=False)
     is_partner = models.BooleanField(default=False)
@@ -59,6 +58,36 @@ class VivaroUser(models.Model):
     def check_password(self, password):
         return make_password(password, salt="salt") == self.password
 
+    def unauthenticate(self):
+        self.is_authenticated = False
+        self.save()
 
-class Session(models.Model):
-    pass
+    def authenticate(self):
+        self.is_authenticated = True
+        self.save()
+
+    def change_balance(self, operator, amount):
+        self.balance = self.balance + (operator)*amount
+        self.save()
+
+    def add_bonus(self, amount):
+        self.balance = self.balance + amount
+        self.save()
+
+class UserAction(models.Model):
+    loged_in = models.BooleanField(default=False)
+    logged_out = models.BooleanField(default=False)
+    user = models.ForeignKey(VivaroUser, models.CASCADE)
+
+    def user_logged_in(self):
+        self.loged_in = True
+        self.logged_out = False
+        self.save()
+
+    def user_logged_out(self):
+        self.loged_out = True
+        self.logged_in = False
+        self.save()
+
+    def set_user(self, new_user):
+        self.user = new_user

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import VivaroUser
+from .models import VivaroUser, UserAction
 
 
 class UserRegestrationSerializer(serializers.Serializer):
@@ -17,8 +17,12 @@ class UserRegestrationSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         if validated_data.get('is_partner'):
-            return VivaroUser.objects.create_partner(**validated_data)
-        return VivaroUser.objects.create_user(**validated_data)
+            user = VivaroUser.objects.create_partner(**validated_data)
+            UserAction.objects.create(user = user)
+            return user
+        user = VivaroUser.objects.create_user(**validated_data)
+        UserAction.objects.create(user=user)
+        return user
 
     def update(self, instance, validated_data):
         pass
@@ -47,7 +51,7 @@ class VivaroUserLoginSerializer(serializers.Serializer):
 
 class MoneyTransactionSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=100, required=True)
-    amount = serializers.IntegerField()
+    balance = serializers.IntegerField(required=True)
 
     def create(self, validated_data):
         pass
@@ -55,11 +59,11 @@ class MoneyTransactionSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         pass
 
-    def transfer(self, validated_data):
-        user = validated_data.get("username")
+    def transfer(self, from_user, validated_data):
+        user = VivaroUser.objects.get(username = validated_data.get("username"))
         if user:
-            user.balance = user.balance + validated_data.amount
-            user.save()
+            user.change_balance(1, validated_data.get("balance"))
+            from_user.change_balance(-1, validated_data.get("balance"))
             return True
         return False
 
@@ -73,10 +77,9 @@ class BonusTransactionSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         pass
 
-    def transfer(self, validated_data):
-        user = validated_data.get("username")
+    def transfer(self, from_user, validated_data):
+        user = VivaroUser.objects.get(username=validated_data.get("username"))
         if user:
-            user.bonus = user.bonus + validated_data.bonus
-            user.save()
+            user.add_bonus_balance(validated_data.get("bonus"))
             return True
         return False
