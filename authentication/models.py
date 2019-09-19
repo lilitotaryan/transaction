@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.auth.hashers import make_password, check_password
-
+from django.utils import timezone
 
 class VivaroUserManager(models.Manager):
     _password = None
@@ -23,7 +23,7 @@ class VivaroUserManager(models.Manager):
         if not email:
             raise ValueError("Email should be specified!!!")
         self._set_password(password)
-        other['password']=self._password
+        other['password'] = self._password
         user = self.model(**other)
         try:
             user.save(using=self.db)
@@ -67,7 +67,7 @@ class VivaroUser(models.Model):
         self.save()
 
     def change_balance(self, operator, amount):
-        self.balance = self.balance + (operator)*amount
+        self.balance = self.balance + (operator) * amount
         self.save()
 
     def add_bonus(self, amount):
@@ -75,19 +75,59 @@ class VivaroUser(models.Model):
         self.save()
 
 class UserAction(models.Model):
-    loged_in = models.BooleanField(default=False)
+    logged_in = models.BooleanField(default=False)
     logged_out = models.BooleanField(default=False)
-    user = models.ForeignKey(VivaroUser, models.CASCADE)
 
     def user_logged_in(self):
-        self.loged_in = True
+        self.logged_in = True
         self.logged_out = False
         self.save()
 
     def user_logged_out(self):
-        self.loged_out = True
+        self.logged_out = True
         self.logged_in = False
         self.save()
 
-    def set_user(self, new_user):
-        self.user = new_user
+class Session(models.Model):
+    token = models.UUIDField(unique=True)
+    last_date = models.DateTimeField(default=timezone.datetime.now())
+    is_expired = models.DateTimeField(null=True)
+    user = models.ForeignKey(VivaroUser, models.CASCADE)
+    action = models.ForeignKey(UserAction, models.CASCADE)
+
+    def update_last_date(self):
+        self.last_date = timezone.datetime.now()
+        self.save()
+
+    def expire(self):
+        self.expired_date = self.last_date
+        self.is_expired = True
+        self.save()
+
+    def unexpire(self):
+        self.is_expired = False
+        self.save()
+
+    def is_unexpired(self):
+        if timezone.datetime.now().minute <= self.last_date.minute + 30:
+            return True
+        self.expire()
+        return False
+
+    def expire_all_sessions(self):
+        all = Session.objects.filter(is_expired=False)
+        if all:
+            for i in all:
+                i.expire()
+
+    def create_user(self, data):
+        user = VivaroUser.objcets.create(**data)
+        self.user = user
+        user.save()
+        self.save()
+
+    def create_action(self, data):
+        action = UserAction.objcets.create(**data)
+        self.action = action
+        action.save()
+        self.save()
