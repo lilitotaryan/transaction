@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import VivaroUser, UserAction
+from .models import VivaroUser
+
 
 
 class UserRegestrationSerializer(serializers.Serializer):
@@ -18,10 +19,8 @@ class UserRegestrationSerializer(serializers.Serializer):
     def create(self, validated_data):
         if validated_data.get('is_partner'):
             user = VivaroUser.objects.create_partner(**validated_data)
-            UserAction.objects.create(user = user)
             return user
         user = VivaroUser.objects.create_user(**validated_data)
-        UserAction.objects.create(user=user)
         return user
 
     def update(self, instance, validated_data):
