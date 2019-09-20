@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from .serializers import VivaroUserLoginSerializer, UserRegestrationSerializer, MoneyTransactionSerializer, BonusTransactionSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from django.core.exceptions import SuspiciousOperation
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import UserAction, VivaroUser, Session
 
 @api_view(['POST'])
-def regestration(request):
+def registration(request):
     data = UserRegestrationSerializer(data=request.data)
     if data.is_valid():
             try:
