@@ -3,6 +3,11 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 
+
+class Partner(models.Model):
+    partner_id = models.CharField(max_length=25)
+
+
 class VivaroUserManager(models.Manager):
     _password = None
 
@@ -48,11 +53,8 @@ class VivaroUser(models.Model):
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
-    balance = models.FloatField(default=0.0)
-    bonus = models.IntegerField(default=0)
     is_authenticated = models.BooleanField(default=False)
-    is_user = models.BooleanField(default=False)
-    is_partner = models.BooleanField(default=False)
+    partner = models.ForeignKey(Partner, models.CASCADE)
     objects = VivaroUserManager()
 
     def check_password(self, password):

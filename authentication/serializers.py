@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import VivaroUser
 
 
-class UserRegestrationSerializer(serializers.Serializer):
+class UserRegistrationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
     username = serializers.CharField(max_length=100, required=True)

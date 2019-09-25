@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .serializers import VivaroUserLoginSerializer, UserRegestrationSerializer, MoneyTransactionSerializer, BonusTransactionSerializer
+from .serializers import VivaroUserLoginSerializer, UserRegistrationSerializer
 from rest_framework.decorators import api_view, permission_classes
 from django.core.exceptions import SuspiciousOperation
 from rest_framework.views import APIView
@@ -11,7 +11,7 @@ from .permissions import AuthenticatedPermission, AlreadyAuthenticatedPermission
 class Registration(APIView):
     permission_classses = [AlreadyAuthenticatedPermission]
     def post(self, request):
-        data = UserRegestrationSerializer(data=request.data)
+        data = UserRegistrationSerializer(data=request.data)
         if data.is_valid():
                 try:
                     data.create(data.validated_data)
