@@ -54,3 +54,7 @@ def logout(request):
         user.unauthenticate()
         return Response("Success")
     return Response({"error": "Session is already expired"}, status=404)
+
+
+def create_partner(request):
+    pass

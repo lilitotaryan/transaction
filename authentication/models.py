@@ -5,7 +5,7 @@ from django.utils import timezone
 
 
 class Partner(models.Model):
-    partner_id = models.CharField(max_length=25)
+    partner_id = models.CharField(max_length=25, blank=False, default=None, unique=True)
 
 
 class VivaroUserManager(models.Manager):
@@ -37,13 +37,6 @@ class VivaroUserManager(models.Manager):
         return user
 
     def create_user(self, **other):
-        other.setdefault("is_user", True)
-        other.setdefault("is_partner", False)
-        return self._create_user(**other)
-
-    def create_partner(self, **other):
-        other.setdefault("is_user", False)
-        other.setdefault("is_partner", True)
         return self._create_user(**other)
 
 
@@ -68,13 +61,12 @@ class VivaroUser(models.Model):
         self.is_authenticated = True
         self.save()
 
-    def change_balance(self, operator, amount):
-        self.balance = self.balance + (operator) * amount
+    def add_partner(self, data):
+        partner = Partner.objects.create(*data)
+        self.partner = partner
         self.save()
+        partner.save()
 
-    def add_bonus(self, amount):
-        self.balance = self.balance + amount
-        self.save()
 
 class UserAction(models.Model):
     logged_in = models.BooleanField(default=False)
