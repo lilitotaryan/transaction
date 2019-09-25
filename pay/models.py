@@ -7,8 +7,8 @@ class Transaction(models.Model):
     send_date = models.DateTimeField(default=timezone.datetime.now())
     receive_date = models.DateTimeField(default=timezone.datetime.now())
     amount = models.FloatField(default=0.0)
-    send = models.BooleanField(default = False)
-    ongoing = models.BooleanField(default = False)
+    send = models.BooleanField(default=False)
+    ongoing = models.BooleanField(default=False)
     currency = models.CharField(max_length=5, blank=False, default=None)
 
     def sent(self):
@@ -19,7 +19,6 @@ class Transaction(models.Model):
         if self.ongoing:
             self.send_date = models.DateTimeField(default=timezone.datetime.now())
             self.save()
-
 
     def set_receive_date(self):
         if self.send:
@@ -62,4 +61,10 @@ class Account(models.Model):
         partner.save()
         self.save()
 
+    def add_user(self, user):
+        self.user = user
+        self.save()
 
+    def add_partner(self, partner):
+        self.partner = partner
+        self.save()

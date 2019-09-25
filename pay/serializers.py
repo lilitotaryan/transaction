@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from authentication.models import VivaroUser
+from authentication.models import VivaroUser, Partner
 from .models import Transaction, Account
 
 # if bonus the currency is equal to bonus
-class TransactionSerializer(serializers.Serializer):
-    partner_id = serializers.CharField(max_length=25)
+class AccountSerializer(serializers.Serializer):
+    partner_id = serializers.CharField(max_length=25, required=True, unique=True)
     amount = serializers.FloatField(default=0.0, )
     currency = serializers.CharField(max_length=5, required=True)
     username = serializers.CharField(max_length=100, required=True, unique = True)
@@ -16,11 +16,36 @@ class TransactionSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         pass
 
-    def transfer(self, from_user, validated_data):
-        user = VivaroUser.objects.get(username = validated_data.get("username"))
-        account = Account.objects.get(account_number = validated_data.get("account"))
-        if user and account:
-            user.change_balance(1, validated_data.get("balance"))
-            from_user.change_balance(-1, validated_data.get("balance"))
+
+class TransactionSerializer(serializers.Serializer):
+    partner_id = serializers.CharField(max_length=25, required=True, unique=True)
+    amount = serializers.FloatField(default=0.0, required=True)
+    currency = serializers.CharField(max_length=5, required=True)
+    username = serializers.CharField(max_length=100, required=True, unique=True)
+    partner_account = serializers.CharField(max_length=25, required=True, unique=True)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def transfer(self, validated_data):
+        partner = Partner.objects.get(partner_id=validated_data.get("partner_id"))
+        user = VivaroUser.objects.filter(username=validated_data.get("username"), partner=partner)
+        partner_account = Account.objects.filter(account_number=validated_data.get("partner_account"), partner=partner)
+        currency = validated_data.get("currency")
+        user_account = Account.objects.filter(user=user, currency=currency)[0]
+        amount = validated_data.get("amount")
+        if not partner or partner_account:
+            raise UnregisteredPartner
+        if not user:
+            raise UserNotFound
+        if partner_account.currency == currency:
+            if currency != "bonus":
+                user_account.balance_change(amount)
+                partner_account.balance_change(-amount)
+                return True
+            user_account.bonus_change(amount)
             return True
-        return False
+        raise IncompatibleCurrencies
