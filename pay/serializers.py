@@ -1,28 +1,16 @@
 from rest_framework import serializers
 from authentication.models import VivaroUser, Partner
 from .models import Transaction, Account
-
-# if bonus the currency is equal to bonus
-class AccountSerializer(serializers.Serializer):
-    partner_id = serializers.CharField(max_length=25, required=True, unique=True)
-    amount = serializers.FloatField(default=0.0, )
-    currency = serializers.CharField(max_length=5, required=True)
-    username = serializers.CharField(max_length=100, required=True, unique = True)
-    account = serializers.CharField(max_length=25, required=True, unique=True)
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
+from .errors import IncompatibleCurrencies
+from authentication.errors import UserNotFound
 
 
 class TransactionSerializer(serializers.Serializer):
-    partner_id = serializers.CharField(max_length=25, required=True, unique=True)
-    amount = serializers.FloatField(default=0.0, required=True)
+    partner_id = serializers.CharField(max_length=25, required=True)
+    amount = serializers.FloatField(default=0.0)
     currency = serializers.CharField(max_length=5, required=True)
-    username = serializers.CharField(max_length=100, required=True, unique=True)
-    partner_account = serializers.CharField(max_length=25, required=True, unique=True)
+    username = serializers.CharField(max_length=100, required=True)
+    partner_account = serializers.CharField(max_length=25, required=True)
 
     def create(self, validated_data):
         pass
@@ -37,8 +25,6 @@ class TransactionSerializer(serializers.Serializer):
         currency = validated_data.get("currency")
         user_account = Account.objects.filter(user=user, currency=currency)[0]
         amount = validated_data.get("amount")
-        if not partner or partner_account:
-            raise UnregisteredPartner
         if not user:
             raise UserNotFound
         if partner_account.currency == currency:
