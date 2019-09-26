@@ -62,7 +62,7 @@ class VivaroUser(models.Model):
         self.save()
 
     def add_partner(self, data):
-        partner = Partner.objects.create(*data)
+        partner = Partner.objects.create(**data)
         self.partner = partner
         self.save()
         partner.save()

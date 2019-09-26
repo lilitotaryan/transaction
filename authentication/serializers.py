@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import VivaroUser, Partner
 from pay.models import Account
 
+
 class UserRegistrationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=False)
     last_name = serializers.CharField(max_length=150, required=False)
@@ -11,16 +12,21 @@ class UserRegistrationSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=100, required=True)
     is_authenticated = serializers.BooleanField(default=False, required=False)
     partner_id = serializers.CharField(max_length=25, required=True)
-    account_number = serializers.CharField(max_length=25, required=True)
-    account_currency = serializers.CharField(max_length=5, required=True)
+    user_account_number = serializers.CharField(max_length=25, required=True)
+    user_account_currency = serializers.CharField(max_length=5, required=True)
+    partner_account_number = serializers.CharField(max_length=25, required=True)
+    partner_account_currency = serializers.CharField(max_length=5, required=True)
 
     def create(self, validated_data):
-        partner_id = validated_data.pop('partner_id')
-        account_number = validated_data.pop('account')
+        data = {'partner_id': validated_data.pop('partner_id'),
+                'partner_account_number': validated_data.pop('partner_account_number'),
+                'partner_account_currency': validated_data.pop('partner_account_currency')}
+        user_account_number = validated_data.pop('user_account_number')
+        user_account_currency = validated_data.pop('user_account_currency')
         user = VivaroUser.objects.create_user(**validated_data)
-        account = Account.objects.create(account_number=account_number, currency=validated_data.get('account_currency'))
+        account = Account.objects.create(account_number=user_account_number, currency=user_account_currency)
         account.add_user(user)
-        user.add_partner(partner_id)
+        user.add_partner(**data)
         return user
 
     def update(self, instance, validated_data):
@@ -47,19 +53,3 @@ class VivaroUserLoginSerializer(serializers.Serializer):
             return False
         except VivaroUser.DoesNotExist:
             return False
-
-class CreatePartnerSerializer(serializers.Serializer):
-    partner_id = serializers.CharField(max_length=25, required=True, unique=True)
-    account_number = serializers.CharField(max_length=25, required=True)
-    account_currency = serializers.CharField(max_length=5, required=True)
-
-    def create(self, validated_data):
-        partner_id = validated_data.pop('partner_id')
-        account_number = validated_data.pop('account')
-        partner = Partner.objects.create(**validated_data)
-        account = Account.objects.create(account_number=account_number, currency=validated_data.get('account_currency'))
-        account.add_partner(partner)
-        return partner
-
-    def update(self, instance, validated_data):
-        pass
