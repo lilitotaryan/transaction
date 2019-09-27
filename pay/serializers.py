@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from authentication.models import VivaroUser, Partner
-from .models import Transaction, Account
+from .models import Transaction
 from .errors import IncompatibleCurrencies
 from authentication.errors import UserNotFound
 
@@ -21,17 +21,17 @@ class TransactionSerializer(serializers.Serializer):
     def transfer(self, validated_data):
         partner = Partner.objects.get(partner_id=validated_data.get("partner_id"))
         user = VivaroUser.objects.filter(username=validated_data.get("username"), partner=partner)
-        partner_account = Account.objects.filter(account_number=validated_data.get("partner_account"), partner=partner)
+        # partner_account = Account.objects.filter(account_number=validated_data.get("partner_account"), partner=partner)
         currency = validated_data.get("currency")
-        user_account = Account.objects.filter(user=user, currency=currency)[0]
+        # user_account = Account.objects.filter(user=user, currency=currency)[0]
         amount = validated_data.get("amount")
         if not user:
             raise UserNotFound
-        if partner_account.currency == currency:
-            if currency != "bonus":
-                user_account.balance_change(amount)
-                partner_account.balance_change(-amount)
-                return True
-            user_account.bonus_change(amount)
+        # if partner_account.currency == currency:
+        if currency != "bonus":
+            user.balance_change(amount)
+            partner.balance_change(-amount)
             return True
+        user.bonus_change(amount)
+        return True
         raise IncompatibleCurrencies

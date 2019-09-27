@@ -21,8 +21,8 @@ class PartnerPermission(permissions.BasePermission):
 class CheckServiceToken(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        x_api_key = request.META.get('HTTP_X_API_KEY')
-        return settings.SERVICE_TOKEN == x_api_key
+        x_service_key = request.META.get('HTTP_X_SERVICE_KEY')
+        return settings.SERVICE_TOKEN == x_service_key
 
     @property
     def message(self):

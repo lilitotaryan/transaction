@@ -9,8 +9,10 @@ from .utils import error_handler
 class AlreadyAuthenticatedPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
+        if request.data.get("session_token"):
             session = Session.objects.get(token=request.data.get("session_token"))
             return session.action.loged_in
+        return True
 
     @property
     def message(self):
@@ -19,8 +21,10 @@ class AlreadyAuthenticatedPermission(permissions.BasePermission):
 class AuthenticatedPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
+        if request.data.get("session_token"):
             session = Session.objects.get(token=request.data.get("session_token"))
             return session.action.loged_out
+        return True
 
     @property
     def message(self):

@@ -7,7 +7,8 @@ from .errors import UserAlreadyExists, InvalidInput, InvalidUsernamePassword, Se
 from .utils import error_handler
 
 class Registration(APIView):
-    permission_classes = [CheckApiToken, AlreadyAuthenticatedPermission]
+    # CheckApiToken,
+    permission_classes = [AlreadyAuthenticatedPermission]
 
     def post(self, request):
         data = UserRegistrationSerializer(data=request.data)
@@ -21,7 +22,7 @@ class Registration(APIView):
 
 
 class Login(APIView):
-    permission_classes = [CheckApiToken, AlreadyAuthenticatedPermission]
+    permission_classes = [AlreadyAuthenticatedPermission]
 
     def post(self, request):
         data = VivaroUserLoginSerializer(data=request.data)
@@ -44,7 +45,7 @@ class Login(APIView):
 
 
 class Logout(APIView):
-    permission_classes = [CheckApiToken, AuthenticatedPermission]
+    permission_classes = [AuthenticatedPermission]
 
     def post(self, request):
         session = Session.objects.get(token=request.data.get("session_token"))

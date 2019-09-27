@@ -6,7 +6,7 @@ from django.utils import timezone
 
 class Partner(models.Model):
     partner_id = models.CharField(max_length=25, blank=False, default=None, unique=True)
-
+    balance = models.FloatField(default=0.0)
 
 class VivaroUserManager(models.Manager):
     _password = None
@@ -31,14 +31,14 @@ class VivaroUserManager(models.Manager):
         other['password'] = self._password
         user = self.model(**other)
         try:
-            user.save(using=self.db)
-        except:
+            user.save()
+        except Exception as e:
+            print(e)
             raise ValueError("User already exists")
         return user
 
     def create_user(self, **other):
         return self._create_user(**other)
-
 
 class VivaroUser(models.Model):
     name = models.CharField(max_length=100)
@@ -47,7 +47,9 @@ class VivaroUser(models.Model):
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
     is_authenticated = models.BooleanField(default=False)
-    partner = models.ForeignKey(Partner, models.CASCADE)
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, null=True)
+    balance = models.FloatField(default=0.0)
+    bonus = models.IntegerField(default=0)
     objects = VivaroUserManager()
 
     def check_password(self, password):
@@ -82,12 +84,13 @@ class UserAction(models.Model):
         self.logged_in = False
         self.save()
 
+
 class Session(models.Model):
     token = models.UUIDField(unique=True)
     last_date = models.DateTimeField(default=timezone.datetime.now())
     is_expired = models.DateTimeField(null=True)
-    user = models.ForeignKey(VivaroUser, models.CASCADE)
-    action = models.ForeignKey(UserAction, models.CASCADE)
+    user = models.ForeignKey(VivaroUser, models.CASCADE, null=True)
+    action = models.ForeignKey(UserAction, models.CASCADE, null=True)
 
     def update_last_date(self):
         self.last_date = timezone.datetime.now()

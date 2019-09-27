@@ -1,31 +1,28 @@
 from rest_framework import serializers
 from .models import VivaroUser, Partner
-from pay.models import Account
 
 
 class UserRegistrationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=False)
-    last_name = serializers.CharField(max_length=150, required=False)
     username = serializers.CharField(max_length=100, required=True)
     email = serializers.EmailField(max_length=200, required=True)
     password = serializers.CharField(max_length=200, required=True)
     phone_number = serializers.CharField(max_length=100, required=True)
-    is_authenticated = serializers.BooleanField(default=False, required=False)
     partner_id = serializers.CharField(max_length=25, required=True)
-    user_account_number = serializers.CharField(max_length=25, required=True)
-    user_account_currency = serializers.CharField(max_length=5, required=True)
-    partner_account_number = serializers.CharField(max_length=25, required=True)
-    partner_account_currency = serializers.CharField(max_length=5, required=True)
+    partner_balance = serializers.FloatField(required=False)
+    balance = serializers.FloatField(required=False, default=0.0)
+    bonus = serializers.IntegerField(required=False, default=0)
 
     def create(self, validated_data):
         data = {'partner_id': validated_data.pop('partner_id'),
-                'partner_account_number': validated_data.pop('partner_account_number'),
-                'partner_account_currency': validated_data.pop('partner_account_currency')}
-        user_account_number = validated_data.pop('user_account_number')
-        user_account_currency = validated_data.pop('user_account_currency')
+                'partner_balance': validated_data.pop('partner_balance', 0.0)}
         user = VivaroUser.objects.create_user(**validated_data)
-        account = Account.objects.create(account_number=user_account_number, currency=user_account_currency)
-        account.add_user(user)
+
+        # try:
+        #     # account = Account.objects.create(account_number=user_account_number, currency=user_account_currency)
+        # except Exception as e:
+        #     print(e)
+        # account.add_user(user)
         user.add_partner(**data)
         return user
 
