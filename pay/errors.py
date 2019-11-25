@@ -4,7 +4,7 @@ from rest_framework.exceptions import APIException
 class IncompatibleCurrencies(APIException):
     status_code = 406
     default_detail = 'The currency is not compatible with partner account\'s currency.'
-    default_code = 'incompatible_currencies'
+    default_code = 'the_incompatible_currencies'
 
 
 class ForbiddenAction(APIException):
