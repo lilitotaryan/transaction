@@ -3,12 +3,10 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 
+from authentication.utils import UserAccountAction, get_current_time
 
-class Partner(models.Model):
-    partner_id = models.CharField(max_length=25, blank=False, default=None, unique=True)
-    balance = models.FloatField(default=0.0)
 
-class VivaroUserManager(models.Manager):
+class UserManager(models.Manager):
     _password = None
 
     def _set_password(self, password):
@@ -40,17 +38,16 @@ class VivaroUserManager(models.Manager):
     def create_user(self, **other):
         return self._create_user(**other)
 
-class VivaroUser(models.Model):
+class User(models.Model):
     name = models.CharField(max_length=100)
     username = models.CharField(max_length=100, blank=False, default=None, unique=True)
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
     is_authenticated = models.BooleanField(default=False)
-    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, null=True)
     balance = models.FloatField(default=0.0)
     bonus = models.IntegerField(default=0)
-    objects = VivaroUserManager()
+    objects = UserManager()
 
     def check_password(self, password):
         return make_password(password, salt="salt") == self.password
@@ -63,35 +60,37 @@ class VivaroUser(models.Model):
         self.is_authenticated = True
         self.save()
 
-    def add_partner(self, data):
-        partner = Partner.objects.create(**data)
-        self.partner = partner
-        self.save()
-        partner.save()
+
+class Device(models.Model):
+    os_family = models.StringField(max_length=STRING_LEN)
+    os_version = models.StringField(max_length=STRING_LEN)
+    device_brand = models.StringField(max_length=STRING_LEN)
+    device_model = models.StringField(max_length=STRING_LEN)
+    device_id = models.StringField(max_length=STRING_LEN, unique=True)
+    is_tablet = models.BooleanField(default=False)
+    user_agent = models.StringField(max_length=STRING_LEN)
+    user = models.models.ForeignKey(User, models.CASCADE)
+
 
 
 class UserAction(models.Model):
-    logged_in = models.BooleanField(default=False)
-    logged_out = models.BooleanField(default=False)
+    email = models.EmailField(max_length=100, required=True)
+    action = models.IntegerField(required=True, choices=UserAccountAction.choices())
+    ip = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+    device = models.ForeignKey(Device, models.CASCADE, null=True)
+    time = models.DateTimeField(default=get_current_time)
+    params = models.DictField()
 
-    def user_logged_in(self):
-        self.logged_in = True
-        self.logged_out = False
-        self.save()
-
-    def user_logged_out(self):
-        self.logged_out = True
-        self.logged_in = False
-        self.save()
 
 
 class Session(models.Model):
     token = models.UUIDField(unique=True)
     last_date = models.DateTimeField(default=timezone.datetime.now())
     is_expired = models.DateTimeField(null=True)
-    user = models.ForeignKey(VivaroUser, models.CASCADE, null=True)
+    user = models.ForeignKey(User, models.CASCADE, null=True)
     action = models.ForeignKey(UserAction, models.CASCADE, null=True)
-
+    device = models.ForeignKey(Device, models.CASCADE, null=True)
     def update_last_date(self):
         self.last_date = timezone.datetime.now()
         self.save()
@@ -118,7 +117,7 @@ class Session(models.Model):
                 i.expire()
 
     def create_user(self, data):
-        user = VivaroUser.objcets.create(**data)
+        user = User.objcets.create(**data)
         self.user = user
         user.save()
         self.save()
