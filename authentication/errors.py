@@ -9,7 +9,7 @@ class UserNotFound(APIException):
 class PartnerNotFound(APIException):
     status_code = 404
     default_detail = 'Partner not found.'
-    default_code = 'partner_not_found'
+    default_code = 'partner_is_not_found'
 
 
 class InvalidInput(APIException):
