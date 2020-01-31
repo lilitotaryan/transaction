@@ -4,6 +4,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 
 from authentication.utils import UserAccountAction, get_current_time
+from constants import STRING_LEN
 
 
 class UserManager(models.Manager):
@@ -62,25 +63,25 @@ class User(models.Model):
 
 
 class Device(models.Model):
-    os_family = models.StringField(max_length=STRING_LEN)
-    os_version = models.StringField(max_length=STRING_LEN)
-    device_brand = models.StringField(max_length=STRING_LEN)
-    device_model = models.StringField(max_length=STRING_LEN)
-    device_id = models.StringField(max_length=STRING_LEN, unique=True)
+    os_family = models.CharField(max_length=STRING_LEN)
+    os_version = models.CharField(max_length=STRING_LEN)
+    device_brand = models.CharField(max_length=STRING_LEN)
+    device_model = models.CharField(max_length=STRING_LEN)
+    device_id = models.CharField(max_length=STRING_LEN, unique=True)
     is_tablet = models.BooleanField(default=False)
-    user_agent = models.StringField(max_length=STRING_LEN)
-    user = models.models.ForeignKey(User, models.CASCADE)
+    user_agent = models.CharField(max_length=STRING_LEN)
+    user = models.ForeignKey(User, models.CASCADE)
 
 
 
 class UserAction(models.Model):
-    email = models.EmailField(max_length=100, required=True)
-    action = models.IntegerField(required=True, choices=UserAccountAction.choices())
+    email = models.EmailField(max_length=100)
+    action = models.IntegerField(choices=UserAccountAction.members())
     ip = models.CharField(max_length=100)
     country = models.CharField(max_length=100)
     device = models.ForeignKey(Device, models.CASCADE, null=True)
     time = models.DateTimeField(default=get_current_time)
-    params = models.DictField()
+    params = models.TextField(max_length=100)
 
 
 

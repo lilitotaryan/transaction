@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import VivaroUser
+from .models import User
 
-@admin.register(VivaroUser)
+@admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     exclude = ('is_authenticated',)
