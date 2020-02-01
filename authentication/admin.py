@@ -1,6 +1,13 @@
 from django.contrib import admin
-from .models import User
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser
 
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    exclude = ('is_authenticated',)
+
+# class CustomUserAdmin(UserAdmin):
+#    # add_form = CustomUserCreationForm
+#    # form = CustomUserChangeForm
+#    model = User
+#    list_display = ['email', 'username', ]
+
+
+admin.site.register(CustomUser)

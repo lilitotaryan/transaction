@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import CustomUser
 
 
 class UserRegistrationSerializer(serializers.Serializer):
@@ -10,7 +10,7 @@ class UserRegistrationSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=100, required=True)
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = CustomUser.objects.create_user(**validated_data)
         return user
 
     def update(self, instance, validated_data):
