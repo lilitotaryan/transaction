@@ -8,10 +8,6 @@ from constants import STRING_LEN
 
 
 class CustomUserManager(UserManager):
-    _password = None
-
-    def _set_password(self, password):
-        self._password = make_password(password, salt="salt")
 
     def _create_user(self, **other):
         username = other.get('username')
@@ -26,11 +22,10 @@ class CustomUserManager(UserManager):
             raise ValueError("Password should be specified!!!")
         if not email:
             raise ValueError("Email should be specified!!!")
-        self._set_password(password)
-        other['password'] = self._password
         user = self.model(**other)
+        user.set_password(password)
         try:
-            user.save()
+            user.save(using=self._db)
         except Exception as e:
             print(e)
             raise ValueError("User already exists")
@@ -39,7 +34,7 @@ class CustomUserManager(UserManager):
     def create_user(self, other):
         other.setdefault('is_staff', False)
         other.setdefault('is_superuser', False)
-        return self._create_user(other)
+        return self._create_user(**other)
 
 
     def create_superuser(self, other):
@@ -55,15 +50,25 @@ class CustomUserManager(UserManager):
 
 
 class CustomUser(AbstractUser):
-    name = models.CharField(max_length=100)
+    first_name = models.CharField(max_length=30, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
     username = models.CharField(max_length=100, blank=False, default=None, unique=True)
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
     objects = CustomUserManager()
 
-    # def check_password(self, password):
-    #     return make_password(password, salt="salt") == self.password
+
+class EventUser(CustomUser):
+    is_event_user = models.BooleanField(default=False)
+
+class Company(CustomUser):
+    is_company_user = models.BooleanField(default=False)
+
+class Admin(CustomUser):
+    pass
+    # def create_user(self, other):
+    #     return super().create_superuser(other)
 
 
 # class Device(models.Model):

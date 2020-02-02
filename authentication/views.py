@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from rest_framework.views import APIView
@@ -32,7 +32,8 @@ class Login(APIView):
     def post(self, request):
         data = UserLoginSerializer(data=request.data)
         if data.is_valid():
-            user = authenticate(username = data.validated_data.username, password = data.validated_data.password)
+            user = authenticate(username=data.validated_data.get("username"),
+                                password=data.validated_data.get("password"))
             if user is not None:
                 login(request, user)
                 return Response({"username": user.username, "email": user.email, "phone_number": user.phone_number})
@@ -58,13 +59,16 @@ class Login(APIView):
 class Logout(APIView):
     permission_classes = []
 
-    def post(self, request):
-        session = Session.objects.get(token=request.data.get("session_token"))
-        user = session.user
-        if session.is_unexpired():
-            session.action.logged_out()
-            session.expire_all_sessions()
-            user.unauthenticate()
-            return Response("Success")
-        return error_handler(SessionAlreadyExpired)
+    # def post(self, request):
+    #     session = Session.objects.get(token=request.data.get("session_token"))
+    #     user = session.user
+    #     if session.is_unexpired():
+    #         session.action.logged_out()
+    #         session.expire_all_sessions()
+    #         user.unauthenticate()
+    #         return Response("Success")
+    #     return error_handler(SessionAlreadyExpired)
 
+    def get(self, request):
+        logout(request)
+        return Response({"success": "true"})
