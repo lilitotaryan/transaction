@@ -4,11 +4,11 @@ DEBUG = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'transaction_db',
-        'USER': 'postgres',
+        'USER': 'izabella',
         'PASSWORD': '123456',
         'HOST': '127.0.0.1',
-        # 'PORT': '5432',
+        'PORT': '7531'
     }
 }
