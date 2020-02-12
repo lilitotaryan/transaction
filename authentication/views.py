@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
-# from .models import Session
+from .models import Session
 # from .permissions import AuthenticatedPermission, AlreadyAuthenticatedPermission, CheckApiToken
 from .errors import InvalidUsernamePassword, SessionAlreadyExpired
 from .utils import error_handler
@@ -13,7 +13,13 @@ class User(APIView):
     permission_classes = []
 
     def post(self, request):
-        pass
+        data = UserRegistrationSerializer(data=request.data)
+        if data.is_valid():
+            user = data.create(validated_data=data.validated_data)
+            if user is not None:
+                return Response({"username": user.username, "email": user.email, "phone_number": user.phone_number})
+            return Response({"error": "could not register user"})
+        return Response({"error": "could not register user from serializer"})
 
     def get(self, request):
         return request.user
@@ -32,29 +38,18 @@ class Login(APIView):
     def post(self, request):
         data = UserLoginSerializer(data=request.data)
         if data.is_valid():
-            user = authenticate(username=data.validated_data.get("username"),
-                                password=data.validated_data.get("password"))
+            email=data.validated_data.get("email")
+            password = data.validated_data.get("password")
+            user = authenticate(email=email,
+                                password=password)
             if user is not None:
                 login(request, user)
-                return Response({"username": user.username, "email": user.email, "phone_number": user.phone_number})
+                session = Session(user=user, device_brand=request.data.get('device_brand'),
+                                  os_system=request.data.get('os_system'))
+                session.save()
+                request.user.session = session.token
+                return Response(user.serialize())
             return Response({"error": "Invalid Username or Password"})
-            # session = Session.objects.get(token=request.data.get("session_token"))
-            # user = data.authentication(data.validated_data)
-            # session.add_user(user)
-            # expired = session.is_unexpired()
-
-        #     if user and not expired:
-        #         if not session.user_action:
-        #             session.user_action.add_action({"logged_in": True, "logged_out": False})
-        #         elif session.user_action.logged_out:
-        #             session.user_action.user_logged_in()
-        #             session.update_last_date()
-        #             user.authenticate()
-        #             return Response({"username": user.username, "email": user.email, "phone_number": user.phone_number})
-        #     if not user:
-        #         return InvalidInput(InvalidUsernamePassword)
-        # return error_handler(InvalidInput)
-
 
 class Logout(APIView):
     permission_classes = []

@@ -9,7 +9,7 @@ class BaseEnum(Enum):
             return (i.value, i.name)
 
 
-class UserAccountAction(BaseEnum):
+class StateEnum(BaseEnum):
     REGISTER = 1
     UNSUCCESSFUL_REGISTER = 2
     FIRST_LOGIN = 3
