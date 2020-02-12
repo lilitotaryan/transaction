@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 
+from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from .utils import error_handler
 
 
 class User(APIView):
-    permission_classes = []
+    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
 
     def post(self, request):
         data = UserRegistrationSerializer(data=request.data)
@@ -33,12 +34,12 @@ class User(APIView):
 
 
 class Login(APIView):
-    permission_classes = []
+    permission_classes = [ApiTokenPermission]
 
     def post(self, request):
         data = UserLoginSerializer(data=request.data)
         if data.is_valid():
-            email=data.validated_data.get("email")
+            email = data.validated_data.get("email")
             password = data.validated_data.get("password")
             user = authenticate(email=email,
                                 password=password)
@@ -52,18 +53,14 @@ class Login(APIView):
             return Response({"error": "Invalid Username or Password"})
 
 class Logout(APIView):
-    permission_classes = []
-
-    # def post(self, request):
-    #     session = Session.objects.get(token=request.data.get("session_token"))
-    #     user = session.user
-    #     if session.is_unexpired():
-    #         session.action.logged_out()
-    #         session.expire_all_sessions()
-    #         user.unauthenticate()
-    #         return Response("Success")
-    #     return error_handler(SessionAlreadyExpired)
+    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
 
     def get(self, request):
+        session_token = request.user.session
+        try:
+            session = Session.objects.get(token=session_token)
+            session.expire_session()
+        except (Session.DoesNotExist, Session.MultipleObjectsReturned):
+            return Response({"error": "Session does not exist"})
         logout(request)
         return Response({"success": "true"})

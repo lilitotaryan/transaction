@@ -90,6 +90,7 @@ class CustomUser(AbstractUser):
     created_date = models.DateTimeField(default=get_current_time)
     name = models.CharField(max_length=200, default=None, unique=True, null=True)
     category = models.ForeignKey(Category, models.CASCADE, null=True)
+
     is_company = models.BooleanField(default=False)
     objects = CustomUserManager()
 
@@ -162,12 +163,17 @@ class Session(models.Model):
     is_expired = models.BooleanField(default=False)
 
     def is_unexpired(self):
-        if get_current_time.minute <= self.last_date.minute + SESSION_EXPIRATION_TIME:
+        if get_current_time().minute <= self.connected_date.minute + SESSION_EXPIRATION_TIME:
             return True
         self.is_expired = True
         self.disconnected_date = get_current_time()
         self.save()
         return False
+
+    def expire_session(self):
+        self.is_expired = True
+        self.disconnected_date = get_current_time()
+        self.save()
 
     @staticmethod
     def expire_all_sessions(self):
