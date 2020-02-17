@@ -1,43 +1,75 @@
 from django.contrib.auth import authenticate, login, logout
+from rest_framework.decorators import permission_classes
 
+from authentication.decorators import error_handler
 from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, SessionRecordSerializer, \
+    CompanyRegistrationSerializer, CategoryAddSerializer, AddressCreationSerializer
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import Session
-# from .permissions import AuthenticatedPermission, AlreadyAuthenticatedPermission, CheckApiToken
-from .errors import InvalidUsernamePassword, SessionAlreadyExpired
-from .utils import error_handler
+from .models import Session, Category, Address
+from django.conf import settings
+from .errors import InvalidUsernamePassword, SessionAlreadyExpired, DeviceDataNotValid, UserDataNotValid, \
+    CategoryDataNotValid, CategoriesNotFound, AddressDataNotValid, UserHasNoCategory, \
+    UserHasNoAddress
+from .utils import response
 
 
 class User(APIView):
-    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
 
+    @permission_classes([ApiTokenPermission])
+    @error_handler
     def post(self, request):
-        data = UserRegistrationSerializer(data=request.data)
+        # todo error handling for different cases
+        if not request.data.get("is_company"):
+            data = UserRegistrationSerializer(data=request.data)
+        else:
+            data = CompanyRegistrationSerializer(data=request.data)
         if data.is_valid():
             user = data.create(validated_data=data.validated_data)
             if user is not None:
-                return Response({"username": user.username, "email": user.email, "phone_number": user.phone_number})
-            return Response({"error": "could not register user"})
-        return Response({"error": "could not register user from serializer"})
+                return response(data=user.serialize())
+        # Todo not mandatory for serializer errors
+        # for key, val in data.errors:
+        #     field = key
+        #     for i in val:
+        #         # map(lambda d: d['value'], l)
+        #         code = val[i].code
+        #             raise VallidationError(field, code)
+        raise UserDataNotValid()
 
+    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
+    @error_handler
     def get(self, request):
-        return request.user
+        return response(request.user.serialize())
 
+    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
+    @error_handler
     def delete(self, request):
-        pass
+        user = request.user
+        session = Session.objects.get(token=request.user.session)
+        session.expire_all_sessions()
+        user.is_active = False
+        user.save()
+        return response()
 
+    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
+    @error_handler
     def patch(self, request):
         pass
-
 
 
 class Login(APIView):
     permission_classes = [ApiTokenPermission]
 
+    @error_handler
     def post(self, request):
+        session_request = {'device_brand': request.data.pop('device_brand'),
+                           'os_system': request.data.pop('os_system')
+                           }
         data = UserLoginSerializer(data=request.data)
+        session_data = SessionRecordSerializer(data=session_request)
+        if not session_data.is_valid() and settings.DEBUG:
+            raise DeviceDataNotValid()
         if data.is_valid():
             email = data.validated_data.get("email")
             password = data.validated_data.get("password")
@@ -45,22 +77,85 @@ class Login(APIView):
                                 password=password)
             if user is not None:
                 login(request, user)
-                session = Session(user=user, device_brand=request.data.get('device_brand'),
-                                  os_system=request.data.get('os_system'))
+                session = Session(user=user, device_brand=session_data.validated_data.get('device_brand'),
+                                  os_system=session_data.validated_data.get('os_system'))
                 session.save()
                 request.user.session = session.token
-                return Response(user.serialize())
-            return Response({"error": "Invalid Username or Password"})
+                return response(data=user.serialize())
+            raise InvalidUsernamePassword()
+
 
 class Logout(APIView):
     permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
 
+    @error_handler
     def get(self, request):
-        session_token = request.user.session
-        try:
-            session = Session.objects.get(token=session_token)
-            session.expire_session()
-        except (Session.DoesNotExist, Session.MultipleObjectsReturned):
-            return Response({"error": "Session does not exist"})
+        session = Session.objects.get(token=request.user.session)
+        session.expire_session()
         logout(request)
-        return Response({"success": "true"})
+        return response()
+
+
+class UserCategory(APIView):
+    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
+
+    @error_handler
+    def post(self, request):
+        user = request.user
+        categories_data = request.data.get("categories")
+        for i in categories_data:
+            data = CategoryAddSerializer(data=i)
+            if data.is_valid():
+                category = Category.objects.get(name=data.validated_data("name"))
+                if category is None:
+                    category = data.create(data.validated_data)
+                category.user.add(user)
+                category.save()
+            raise CategoryDataNotValid()
+
+    @error_handler
+    def get(self, request):
+        user = request.user
+        all_categories = Category.objects.get(user=user)
+        if all_categories is not None:
+            return response(data={[i.serialize() for i in all_categories]})
+        raise UserHasNoCategory()
+
+    def delete(self, request):
+        pass
+
+
+@error_handler
+@permission_classes([ApiTokenPermission])
+def get_all_categories(request):
+    all_categories = Category.objects.values('name').distinct()
+    if all_categories is not None:
+        return response(data={[i.serialize for i in all_categories]})
+    raise CategoriesNotFound()
+
+
+class UserAddress(APIView):
+    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
+
+    @error_handler
+    def post(self, request):
+        user = request.user
+        data = AddressCreationSerializer(data=request.data)
+        if data.is_valid():
+            address = Address.objects.get(hash=data.get_hash())
+            if address is None:
+                address = data.create(data.validated_data)
+            user.address = address
+            user.save()
+        raise AddressDataNotValid()
+
+    @error_handler
+    def get(self, request):
+        user = request.user
+        address = User.objects.get(user=user).address
+        if address is not None:
+            return response(data=address.serialize())
+        raise UserHasNoAddress()
+
+    def delete(self, request):
+        pass

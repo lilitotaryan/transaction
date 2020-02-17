@@ -1,5 +1,7 @@
 from enum import Enum
 from datetime import datetime, timezone
+
+from django.http import JsonResponse
 from rest_framework.response import Response
 
 class BaseEnum(Enum):
@@ -25,9 +27,7 @@ def get_current_time():
     return datetime.utcnow()
 
 
-def error_handler(error):
-    data = {
-            'data': error.default_detail,
-            'status': error.status_code
-            }
-    return Response(**data)
+def response(data="", errors="", success=True):
+    return JsonResponse(data={"errors": errors,
+                              "OK": success,
+                              "data": data})

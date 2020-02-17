@@ -21,8 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'ec$*d1t3rz(8@js0d1r#r29eb^t*=j(+3n20^^4eamcp!xx_c='
-SERVICE_TOKEN = 'WrwWf0@°f.:VGIs37XL<;B,5/?~1)d;#+4BofYv=9I]6Z+:CEn2p(°4(1qVpUj>n'
-API_TOKEN = 'kS,^QKeB/6*2G{4x§°AhEyebYRNMZWTVLLa_rstUd+QX8T{VLDhzK|-&jid?ZoKZ'
+API_TOKEN = '12bf8fffa86840aee50aeb408621f0ba9c131d8e0edca457ec68a48674f1d4a5'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

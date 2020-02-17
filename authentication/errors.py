@@ -1,6 +1,3 @@
-from rest_framework.exceptions import APIException
-
-
 class ErrorFields:
     def __init__(self, field='', message='', default_code="", code=''):
             if message and type(message) is str:
@@ -24,11 +21,12 @@ class ErrorFields:
 class PasswordIsNotStrong(ErrorFields):
     pass
 
+
 class AuthException(Exception):
-    massage=""
-    code=1
-    default_code=""
-    fields=[]
+    massage = ""
+    code = 1
+    default_code = ""
+    fields = []
 
     def __init__(self, code=1, message='', default_code="", fields=[]):
             if message and type(message) is str:
@@ -57,45 +55,69 @@ class ValidationError(AuthException):
             self.fields.push(field_error.serialize())
 
 
-
-class UserNotFound(AuthException):
+class UserAlreadyExists(AuthException):
     def __init__(self):
-        super().__init__(code=2,
-                         message='User is not found.',
-                         default_code='user_not_found')
-
-# class InvalidInput(AuthException):
-#     status_code = 400
-#     default_detail = 'Invalid input.'
-#     default_code = 'invalid_exists'
+        super().__init__(code=5,
+                         message='User with specified email or Pnone Number already exists.',
+                         default_code='user_exists')
 
 
-# class UserAlreadyExists(AuthException):
-#     status_code = 400
-#     default_detail = 'User already exists.'
-#     default_code = 'user_exists'
+class DeviceDataNotValid(AuthException):
+    def __init__(self):
+        super().__init__(code=3,
+                         message='Device Data is not Valid.',
+                         default_code='device_data_not_valid')
+
+
+class UserDataNotValid(AuthException):
+    def __init__(self):
+        super().__init__(code=5,
+                         message='User Data is not Valid.',
+                         default_code='user_data_not_valid')
+
+
+class CategoryDataNotValid(AuthException):
+    def __init__(self):
+        super().__init__(code=8,
+                         message='Category data is not valid.',
+                         default_code='category_data_not_valid')
 
 
 class InvalidUsernamePassword(AuthException):
-    status_code = 404
-    default_detail = 'Invalid username or password.'
-    default_code = 'invalid_username_password'
+    def __init__(self):
+        super().__init__(code=4,
+                         message='Invalid Username or Password.',
+                         default_code='invalid_username_password')
 
 
 class SessionAlreadyExpired(AuthException):
-    status_code = 404
-    default_detail = 'Session is already expired'
-    default_code = 'session_expired'
+    def __init__(self):
+        super().__init__(code=6,
+                         message='Session is already expired.',
+                         default_code='session_expired')
 
 
-class UserLoggedIn(AuthException):
-    status_code = 401
-    default_detail = 'User is already logged in unauthorized request'
-    default_code = 'user_logged_in'
+class UserHasNoCategory(AuthException):
+    def __init__(self):
+        super().__init__(code=7,
+                         message='User has no selected categories.',
+                         default_code='user_has_no_categories')
 
 
-class NoUserLoggedIn(AuthException):
-    status_code = 401
-    default_detail = 'No user logged in unauthorized request'
-    default_code = 'no_user_logged_in'
+class CategoriesNotFound(AuthException):
+    def __init__(self):
+        super().__init__(code=9,
+                         message='No categories found.',
+                         default_code='no_categories_found')
 
+class AddressDataNotValid(AuthException):
+    def __init__(self):
+        super().__init__(code=10,
+                         message='Address data is not valid.',
+                         default_code='address_data_not_valid')
+
+class UserHasNoAddress(AuthException):
+    def __init__(self):
+        super().__init__(code=11,
+                         message='User has no addred address.',
+                         default_code='user_has_no_address')
