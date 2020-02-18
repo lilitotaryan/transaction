@@ -27,6 +27,16 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+REST_FRAMEWORK = {
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'launcher_api.permissions.RequiredAPIToken',
+    # ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+    # 'EXCEPTION_HANDLER': 'panda_gaming.rest_base.exceptions.custom_exception_handler'
+}
+
+SESSION_COOKIE_SECURE = False
 
 # Application definition
 

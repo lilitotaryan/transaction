@@ -13,9 +13,11 @@ from .errors import SessionAlreadyExpired
 class LoggedInPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        if request.user.is_anonymous():
+        if not request.user.is_authenticated:
             raise UserNotFound
-        return request.user.is_anonymous()
+        if not request.user.is_verified:
+            raise UserNotFound
+        return True
 
     # @property
     # def message(self):
@@ -27,7 +29,7 @@ class SessionExpiredPermission(permissions.BasePermission):
     @error_handler
     def has_permission(self, request, view):
         try:
-            session_token = request.user.session
+            session_token = request.META.get('HTTP_USER_SESSION')
         except AttributeError:
             raise UserNotFound
         if session_token:

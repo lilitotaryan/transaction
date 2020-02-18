@@ -3,7 +3,7 @@ from django.db.utils import IntegrityError
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager, UserManager
 
-from authentication.errors import UserAlreadyExists
+from authentication.errors import UserAlreadyExists, CompanyUserShouldHaveName
 from authentication.utils import get_current_time
 from constants import SESSION_EXPIRATION_TIME
 
@@ -32,16 +32,20 @@ class Address(models.Model):
 class CustomUserManager(UserManager):
 
     def _create_user(self, **other):
+        is_company = other.get('is_company')
         phone_number = other.get('phone_number')
         password = other.get('password')
         email = other.get('email')
         user = self.model(**other)
         user.set_password(password)
+        if is_company and not other.get('name'):
+            raise CompanyUserShouldHaveName()
         try:
             user.save(using=self._db)
         except IntegrityError:
             raise UserAlreadyExists()
         return user
+
 
     def create_user(self, other):
         other.setdefault('is_staff', False)
@@ -66,15 +70,15 @@ class CustomUser(AbstractUser):
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
     phone_number = models.CharField(max_length=100, blank=False, default=None, unique=True)
-    address = models.ForeignKey(Address, models.CASCADE, null=True)
-    gender = models.CharField(max_length=1, default="F", choices=[("M", "Male"),
+    address = models.ForeignKey(Address, models.CASCADE, null=True, blank=True)
+    gender = models.CharField(max_length=6, default="F", choices=[("M", "Male"),
                                                                   ("F", "Female"),
                                                                   ("O", "Other")])
-    is_varified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
     is_termsandconditions_accepted = models.BooleanField(default=False)
     created_date = models.DateTimeField(default=get_current_time)
-    name = models.CharField(max_length=200, default=None, unique=True, null=True)
-    birth_date = models.DateField(null=True)
+    name = models.CharField(max_length=200, default=None, unique=True, null=True, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
 
     is_company = models.BooleanField(default=False)
     objects = CustomUserManager()
@@ -89,7 +93,7 @@ class CustomUser(AbstractUser):
                 "gender": self.gender,
                 "email": self.email,
                 "birth_date": self.birth_date,
-                "is_varified": self.is_varified,
+                "is_verified": self.is_verified,
                 "is_termsandconditions_accepted": self.is_termsandconditions_accepted,
                 "address": self.address.serialize() if address and self.address else "",
                 "is_company": self.is_company,

@@ -10,7 +10,7 @@ class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=200, required=True)
     password = serializers.CharField(max_length=200, required=True)
     phone_number = serializers.CharField(max_length=100, required=True)
-    gender = serializers.ChoiceField(choices=['Male', 'Female', 'Other'])
+    gender = serializers.ChoiceField(choices=["M", "Male", "F", "Female", "O", "Other"], required=False)
     is_termsandconditions_accepted = serializers.BooleanField()
     birth_date = serializers.DateField(default=None, required=False)
     is_company = serializers.BooleanField(default=False)

@@ -31,3 +31,7 @@ def response(data="", errors="", success=True):
     return JsonResponse(data={"errors": errors,
                               "OK": success,
                               "data": data})
+
+
+def send_verification_email(email):
+    pass

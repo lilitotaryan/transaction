@@ -11,15 +11,14 @@ from django.conf import settings
 from .errors import InvalidUsernamePassword, SessionAlreadyExpired, DeviceDataNotValid, UserDataNotValid, \
     CategoryDataNotValid, CategoriesNotFound, AddressDataNotValid, UserHasNoCategory, \
     UserHasNoAddress
-from .utils import response
+from .utils import response, send_verification_email
 
 
 class User(APIView):
 
-    @permission_classes([ApiTokenPermission])
+    # @permission_classes([ApiTokenPermission])
     @error_handler
     def post(self, request):
-        # todo error handling for different cases
         if not request.data.get("is_company"):
             data = UserRegistrationSerializer(data=request.data)
         else:
@@ -59,12 +58,12 @@ class User(APIView):
 
 
 class Login(APIView):
-    permission_classes = [ApiTokenPermission]
+    # permission_classes = [ApiTokenPermission]
 
     @error_handler
     def post(self, request):
-        session_request = {'device_brand': request.data.pop('device_brand'),
-                           'os_system': request.data.pop('os_system')
+        session_request = {'device_brand': request.data.pop('device_brand', None),
+                           'os_system': request.data.pop('os_system', None)
                            }
         data = UserLoginSerializer(data=request.data)
         session_data = SessionRecordSerializer(data=session_request)
@@ -76,21 +75,26 @@ class Login(APIView):
             user = authenticate(email=email,
                                 password=password)
             if user is not None:
+                if not user.is_verified:
+                    send_verification_email(email)
+                    return response(data={"email_check": "Please check your email to verify account"})
                 login(request, user)
                 session = Session(user=user, device_brand=session_data.validated_data.get('device_brand'),
                                   os_system=session_data.validated_data.get('os_system'))
                 session.save()
-                request.user.session = session.token
-                return response(data=user.serialize())
+                data = user.serialize()
+                data["session_token"] = session.token
+                return response(data=data)
             raise InvalidUsernamePassword()
 
 
 class Logout(APIView):
-    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
+    # # ApiTokenPermission
+    permission_classes = [LoggedInPermission, SessionExpiredPermission]
 
     @error_handler
     def get(self, request):
-        session = Session.objects.get(token=request.user.session)
+        session = Session.objects.get(token=request.META.get('HTTP_USER_SESSION'))
         session.expire_session()
         logout(request)
         return response()

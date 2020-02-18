@@ -121,3 +121,10 @@ class UserHasNoAddress(AuthException):
         super().__init__(code=11,
                          message='User has no addred address.',
                          default_code='user_has_no_address')
+
+
+class CompanyUserShouldHaveName(AuthException):
+    def __init__(self):
+        super().__init__(code=11,
+                         message='CompanyUser should have name specified.',
+                         default_code='comapny_user_should_have_name')
