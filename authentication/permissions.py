@@ -28,22 +28,16 @@ class SessionExpiredPermission(permissions.BasePermission):
 
     @error_handler
     def has_permission(self, request, view):
-        try:
-            session_token = request.META.get('HTTP_USER_SESSION')
-        except AttributeError:
-            raise UserNotFound
+        session_token = request.META.get('HTTP_USER_SESSION')
         if session_token:
             try:
-                session = Session.objects.get(token=request.user.session)
+                session = Session.objects.get(token=session_token)
             except (Session.DoesNotExist, Session.MultipleObjectsReturned):
                 raise UserNotFound
             if not session.is_unexpired():
                 raise SessionAlreadyExpired()
-            return session.is_expired
-
-    # @property
-    # def message(self):
-    #     return error_handler(NoUserLoggedIn)
+            return True
+        raise InvalidHeaders
 
 
 class ApiTokenPermission(permissions.BasePermission):

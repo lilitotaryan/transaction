@@ -1,4 +1,8 @@
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authtoken.views import obtain_auth_token
+
 from . import views
+from .views import User
 from django.urls import path
 
 urlpatterns = [

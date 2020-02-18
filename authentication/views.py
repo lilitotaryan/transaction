@@ -1,5 +1,8 @@
 from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import permission_classes
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 
 from authentication.decorators import error_handler
 from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission
@@ -16,7 +19,6 @@ from .utils import response, send_verification_email
 
 class User(APIView):
 
-    # @permission_classes([ApiTokenPermission])
     @error_handler
     def post(self, request):
         if not request.data.get("is_company"):
@@ -36,29 +38,35 @@ class User(APIView):
         #             raise VallidationError(field, code)
         raise UserDataNotValid()
 
-    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
     @error_handler
     def get(self, request):
         return response(request.user.serialize())
 
-    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
+
+    # Todo check permission, I think they are not working
     @error_handler
     def delete(self, request):
         user = request.user
-        session = Session.objects.get(token=request.user.session)
+        session = Session.objects.get(token=request.META.get('HTTP_USER_SESSION'))
         session.expire_all_sessions()
         user.is_active = False
         user.save()
         return response()
 
-    @permission_classes([ApiTokenPermission, LoggedInPermission, SessionExpiredPermission])
     @error_handler
     def patch(self, request):
         pass
 
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            permission_classes = [ApiTokenPermission]
+        else:
+            permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
+        return [permission() for permission in permission_classes]
+
 
 class Login(APIView):
-    # permission_classes = [ApiTokenPermission]
+    permission_classes = [ApiTokenPermission]
 
     @error_handler
     def post(self, request):
@@ -78,19 +86,20 @@ class Login(APIView):
                 if not user.is_verified:
                     send_verification_email(email)
                     return response(data={"email_check": "Please check your email to verify account"})
-                login(request, user)
+                token, _ = Token.objects.get_or_create(user=user)
                 session = Session(user=user, device_brand=session_data.validated_data.get('device_brand'),
                                   os_system=session_data.validated_data.get('os_system'))
                 session.save()
-                data = user.serialize()
-                data["session_token"] = session.token
+                data = {
+                    "session_token": session.token,
+                    "auth_token": token.key
+                }
                 return response(data=data)
             raise InvalidUsernamePassword()
 
 
 class Logout(APIView):
-    # # ApiTokenPermission
-    permission_classes = [LoggedInPermission, SessionExpiredPermission]
+    permission_classes = [ApiTokenPermission, LoggedInPermission, SessionExpiredPermission]
 
     @error_handler
     def get(self, request):
@@ -146,19 +155,19 @@ class UserAddress(APIView):
         user = request.user
         data = AddressCreationSerializer(data=request.data)
         if data.is_valid():
-            address = Address.objects.get(hash=data.get_hash())
+            address = Address.objects.get(hash=data.get_hash(data.validated_data))
             if address is None:
                 address = data.create(data.validated_data)
-            user.address = address
+            user.address.add(address)
             user.save()
         raise AddressDataNotValid()
 
     @error_handler
     def get(self, request):
         user = request.user
-        address = User.objects.get(user=user).address
-        if address is not None:
-            return response(data=address.serialize())
+        all_addresses = user.objects.filter(address__in=Address)
+        if all_addresses is not None:
+            return response(data={[i.serialize for i in all_addresses]})
         raise UserHasNoAddress()
 
     def delete(self, request):

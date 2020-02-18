@@ -158,8 +158,8 @@ class Session(models.Model):
         self.save()
 
     @staticmethod
-    def expire_all_sessions(self):
+    def expire_all_sessions():
         sessions = Session.objects.filter(is_expired=False)
         if sessions:
-            [i.expire() for i in sessions]
+            [i.expire_session() for i in sessions]
 
