@@ -25,9 +25,10 @@ class Address(models.Model):
 
     def create(self, kwargs):
         hash = uuid.uuid3(uuid.NAMESPACE_DNS, kwargs.get("address1")+kwargs.get("city")+
-                               kwargs.get("address2")+kwargs.get("state"))
+                          kwargs.get("address2")+kwargs.get("state"))
         kwargs["hash"] = hash
         super().objects.create(**kwargs)
+
 
 class CustomUserManager(UserManager):
 
@@ -80,7 +81,6 @@ class CustomUser(AbstractUser):
     is_company = models.BooleanField(default=False)
     verification_token = models.UUIDField(unique=True, blank=False, default=uuid.uuid4)
     verification_token_time = models.DateTimeField(default=get_current_time)
-    email_sent = models.BooleanField(default=False)
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
@@ -88,16 +88,16 @@ class CustomUser(AbstractUser):
 
     def serialize(self, address=False, category=False):
         res = {"first_name": self.first_name,
-                "last_name": self.last_name,
-                "phone_number": self.phone_number,
-                "gender": self.gender,
-                "email": self.email,
-                "birth_date": self.birth_date,
-                "is_verified": self.is_verified,
-                "is_termsandconditions_accepted": self.is_termsandconditions_accepted,
-                "address": self.address.serialize() if address and self.address else "",
-                "is_company": self.is_company,
-                }
+               "last_name": self.last_name,
+               "phone_number": self.phone_number,
+               "gender": self.gender,
+               "email": self.email,
+               "birth_date": self.birth_date,
+               "is_verified": self.is_verified,
+               "is_termsandconditions_accepted": self.is_termsandconditions_accepted,
+               "address": self.address.serialize() if address and self.address else "",
+               "is_company": self.is_company,
+               }
         if self.is_company:
             res["name"] = self.name if self.is_company else "",
         else:
@@ -122,8 +122,13 @@ class CustomUser(AbstractUser):
         if get_current_time().minute > self.verification_token_time.minute + VERIFICATION_TOKEN_EXPIRATION_TIME:
             self.verification_token = uuid.uuid4()
             self.verification_token_time = get_current_time()
-            self.email_sent = False
             self.save()
+        return self.verification_token
+
+    def re_update_verification_token(self):
+        self.verification_token = uuid.uuid4()
+        self.verification_token_time = get_current_time()
+        self.save()
         return self.verification_token
 
 class Category(models.Model):

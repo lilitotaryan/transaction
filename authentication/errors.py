@@ -129,9 +129,17 @@ class CompanyUserShouldHaveName(AuthException):
                          message='CompanyUser should have name specified.',
                          default_code='comapny_user_should_have_name')
 
+
 class InvalidEmailValidationToken(AuthException):
     def __init__(self):
         super().__init__(code=4,
                          message='The provided validation token is either non valid or expired, '
                                  'either resend the validation email or input the valid token.',
                          default_code='invalid_email_validation_token')
+
+
+class UnexpectedError(AuthException):
+    def __init__(self):
+        super().__init__(code=4,
+                         message='Unexpected error occurred.',
+                         default_code='unexpected_error')

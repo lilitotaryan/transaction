@@ -1,8 +1,6 @@
-from django.contrib.auth import authenticate, login, logout
-from django.views.decorators.csrf import csrf_protect
-from rest_framework.decorators import permission_classes, api_view
+from django.contrib.auth import authenticate, logout
+from rest_framework.decorators import permission_classes
 from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
 
 from authentication.decorators import error_handler
 from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission, LoggedInNotVerifiedPermission
@@ -43,8 +41,6 @@ class User(APIView):
     def get(self, request):
         return response(request.user.serialize())
 
-
-    # Todo check permission, I think they are not working
     @error_handler
     def delete(self, request):
         user = request.user
@@ -188,26 +184,34 @@ class UserAddress(APIView):
     def delete(self, request):
         pass
 
-@api_view(['GET'])
-@permission_classes([ApiTokenPermission, LoggedInNotVerifiedPermission, SessionExpiredPermission])
-@error_handler
-def verify(request):
-    user = request.user
-    print(user.email_sent)
-    if not user.email_sent:
-        verification_token = user.get_verification_token()
-        send_verification_email(user.email, verification_token)
-        user.email_sent = True
-        user.save()
-        return response(data={"email_sent": "Please check your email to verify account"})
-    if user.email_sent:
+
+class EmailVerification(APIView):
+    permission_classes = [ApiTokenPermission, LoggedInNotVerifiedPermission, SessionExpiredPermission]
+
+    @error_handler
+    def get(self, request):
+        user = request.user
+        if not request.GET.get('email_sent'):
+            verification_token = user.get_verification_token()
+            send_verification_email(user.email, verification_token)
+            user.email_sent = True
+            user.save()
+            return response()
+        else:
+            verification_token = user.re_update_verification_token()
+            send_verification_email(user.email, verification_token)
+            user.email_sent = True
+            user.save()
+            return response()
+
+    @error_handler
+    def post(self, request):
+        user = request.user
         token = UserValidationTokenSerializer(data=request.data)
         if token.is_valid():
-            if not token.check_token(token.validated_data):
+            if not token.check_token(user, token.validated_data):
                 raise InvalidEmailValidationToken()
-        user.email_sent = False
-        user.save()
+            user.is_verified = True
+            user.save()
+            return response()
         raise InvalidEmailValidationToken()
-    user.is_verified = True
-    user.save()
-    return response()
