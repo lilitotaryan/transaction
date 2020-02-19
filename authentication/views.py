@@ -1,19 +1,20 @@
 from django.contrib.auth import authenticate, login, logout
 from django.views.decorators.csrf import csrf_protect
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import permission_classes, api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 
 from authentication.decorators import error_handler
-from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission
+from .permissions import SessionExpiredPermission, ApiTokenPermission, LoggedInPermission, LoggedInNotVerifiedPermission
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, SessionRecordSerializer, \
-    CompanyRegistrationSerializer, CategoryAddSerializer, AddressCreationSerializer
+    CompanyRegistrationSerializer, CategoryAddSerializer, AddressCreationSerializer, UserUpdateSerializer, \
+    UserValidationTokenSerializer
 from rest_framework.views import APIView
 from .models import Session, Category, Address
 from django.conf import settings
 from .errors import InvalidUsernamePassword, SessionAlreadyExpired, DeviceDataNotValid, UserDataNotValid, \
     CategoryDataNotValid, CategoriesNotFound, AddressDataNotValid, UserHasNoCategory, \
-    UserHasNoAddress
+    UserHasNoAddress, InvalidEmailValidationToken
 from .utils import response, send_verification_email
 
 
@@ -55,7 +56,23 @@ class User(APIView):
 
     @error_handler
     def patch(self, request):
-        pass
+        user = request.user
+        request_data = request.data
+        if request_data:
+            data = UserUpdateSerializer(data=request_data)
+            if data.is_valid():
+                user = data.update(instance=user, validated_data=data.validated_data)
+                if user is not None:
+                    return response()
+            # Todo not mandatory for serializer errors
+            # for key, val in data.errors:
+            #     field = key
+            #     for i in val:
+            #         # map(lambda d: d['value'], l)
+            #         code = val[i].code
+            #             raise VallidationError(field, code)
+            raise UserDataNotValid()
+        raise UserDataNotValid()
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -83,16 +100,14 @@ class Login(APIView):
             user = authenticate(email=email,
                                 password=password)
             if user is not None:
-                if not user.is_verified:
-                    send_verification_email(email)
-                    return response(data={"email_check": "Please check your email to verify account"})
                 token, _ = Token.objects.get_or_create(user=user)
                 session = Session(user=user, device_brand=session_data.validated_data.get('device_brand'),
                                   os_system=session_data.validated_data.get('os_system'))
                 session.save()
                 data = {
                     "session_token": session.token,
-                    "auth_token": token.key
+                    "auth_token": token.key,
+                    "is_verified": user.is_verified
                 }
                 return response(data=data)
             raise InvalidUsernamePassword()
@@ -172,3 +187,24 @@ class UserAddress(APIView):
 
     def delete(self, request):
         pass
+
+@api_view(['GET'])
+@permission_classes([ApiTokenPermission, LoggedInNotVerifiedPermission, SessionExpiredPermission])
+@error_handler
+def verify(request):
+    user = request.user
+    if not user.email_sent:
+        verification_token = user.get_verification_token()
+        send_verification_email(user.email, verification_token)
+        user.email_sent = True
+        user.save()
+        return response(data={"email_sent": "Please check your email to verify account"})
+    if user.email_sent:
+        token = UserValidationTokenSerializer(data=request.data)
+        if token.is_valid():
+            if not token.check_token(token.validated_data):
+                raise InvalidEmailValidationToken()
+        raise InvalidEmailValidationToken()
+    user.is_verified = True
+    user.save()
+    return response()

@@ -37,6 +37,18 @@ class UserLoginSerializer(serializers.Serializer):
         pass
 
 
+class UserValidationTokenSerializer(serializers.Serializer):
+    token = serializers.UUIDField(required=True)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def check_token(self, instance, validated_data):
+        return instance.get_validation_token() == validated_data.token
+
 class SessionRecordSerializer(serializers.Serializer):
     device_brand = serializers.CharField(max_length=200, required=True)
     os_system = serializers.CharField(max_length=200, required=True)
@@ -77,3 +89,17 @@ class AddressCreationSerializer(serializers.Serializer):
         return uuid.uuid3(uuid.NAMESPACE_DNS, validated_data.get("address1") + validated_data.get("city") +
                           validated_data.get("address2") + validated_data.get("state"))
 
+
+class UserUpdateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=100, required=False)
+    last_name = serializers.CharField(max_length=100, required=False)
+    phone_number = serializers.CharField(max_length=100, required=False)
+    gender = serializers.ChoiceField(choices=["M", "Male", "F", "Female", "O", "Other"], required=False)
+    birth_date = serializers.DateField(required=False)
+    name = serializers.CharField(max_length=200, required=False)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        return instance.update_user(validated_data)

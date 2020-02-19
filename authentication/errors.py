@@ -58,7 +58,7 @@ class ValidationError(AuthException):
 class UserAlreadyExists(AuthException):
     def __init__(self):
         super().__init__(code=5,
-                         message='User with specified email or Pnone Number already exists.',
+                         message='User already exists.',
                          default_code='user_exists')
 
 
@@ -128,3 +128,10 @@ class CompanyUserShouldHaveName(AuthException):
         super().__init__(code=11,
                          message='CompanyUser should have name specified.',
                          default_code='comapny_user_should_have_name')
+
+class InvalidEmailValidationToken(AuthException):
+    def __init__(self):
+        super().__init__(code=4,
+                         message='The provided validation token is either non valid or expired, '
+                                 'either resend the validation email or input the valid token.',
+                         default_code='invalid_email_validation_token')

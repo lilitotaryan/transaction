@@ -1,6 +1,6 @@
 from enum import Enum
 from datetime import datetime, timezone
-
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from rest_framework.response import Response
 
@@ -33,5 +33,11 @@ def response(data="", errors="", success=True):
                               "data": data})
 
 
-def send_verification_email(email):
-    pass
+def send_verification_email(email, token):
+    send_mail(
+        'EventNet account validation email',
+        'For verifying you account please input the verification token in our website. Token: '+ str(token),
+        'lilitotaryan@gmail.com',
+        [str(email)],
+        fail_silently=True,
+    )

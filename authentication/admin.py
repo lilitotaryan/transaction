@@ -1,15 +1,17 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
-
+from .models import CustomUser, Session
 
 @admin.register(CustomUser)
-class Company(admin.ModelAdmin):
+class CustomUser(admin.ModelAdmin):
+    list_display = ['email', 'is_active', "phone_number"]
     exclude = ('last_login', 'is_superuser', 'groups', 'user_permissions', 'is_staff', 'date_joined')
+    show_change_link = True
 
 
-# @admin.register(EventUser)
-# class EventUser(admin.ModelAdmin):
-#     exclude = ('last_login', 'is_superuser', 'groups', 'user_permissions', 'is_staff', 'is_active', 'date_joined')
+@admin.register(Session)
+class Session(admin.ModelAdmin):
+    list_display = ['token', 'user', 'is_expired']
 
-
+# class StateAdmin(admin.ModelAdmin):
+#     inlines = (CustomUser, )

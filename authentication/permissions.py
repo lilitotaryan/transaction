@@ -19,10 +19,13 @@ class LoggedInPermission(permissions.BasePermission):
             raise UserNotFound
         return True
 
-    # @property
-    # def message(self):
-    #     return error_handler(UserLoggedIn)
 
+class LoggedInNotVerifiedPermission(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            raise UserNotFound
+        return request.user.is_verified
 
 class SessionExpiredPermission(permissions.BasePermission):
 

@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, UserManage
 
 from authentication.errors import UserAlreadyExists, CompanyUserShouldHaveName
 from authentication.utils import get_current_time
-from constants import SESSION_EXPIRATION_TIME
+from constants import SESSION_EXPIRATION_TIME, VERIFICATION_TOKEN_EXPIRATION_TIME
 
 
 class Address(models.Model):
@@ -33,9 +33,7 @@ class CustomUserManager(UserManager):
 
     def _create_user(self, **other):
         is_company = other.get('is_company')
-        phone_number = other.get('phone_number')
         password = other.get('password')
-        email = other.get('email')
         user = self.model(**other)
         user.set_password(password)
         if is_company and not other.get('name'):
@@ -45,7 +43,6 @@ class CustomUserManager(UserManager):
         except IntegrityError:
             raise UserAlreadyExists()
         return user
-
 
     def create_user(self, other):
         other.setdefault('is_staff', False)
@@ -78,9 +75,12 @@ class CustomUser(AbstractUser):
     is_termsandconditions_accepted = models.BooleanField(default=False)
     created_date = models.DateTimeField(default=get_current_time)
     name = models.CharField(max_length=200, default=None, unique=True, null=True, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
+    birth_date = models.DateField(null=True, blank=True, default=None)
 
     is_company = models.BooleanField(default=False)
+    verification_token = models.UUIDField(unique=True, blank=False, default=uuid.uuid4)
+    verification_token_time = models.DateTimeField(default=get_current_time)
+    email_sent = models.BooleanField(default=False)
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
@@ -105,6 +105,26 @@ class CustomUser(AbstractUser):
                                   if category else [],
         return res
 
+    def update_user(self, other):
+        self.phone_number = other.get("phone_number") if other.get("phone_number") else self.phone_number
+        self.gender = other.get("gender") if other.get("gender") else self.gender
+        self.name = other.get("name") if other.get("name") else self.name
+        self.birth_date = other.get("birth_date") if other.get("birth_date") else self.birth_date
+        self.first_name = other.get("first_name") if other.get("first_name") else self.first_name
+        self.last_name = other.get("last_name") if other.get("last_name") else self.name
+        try:
+            self.save()
+        except IntegrityError:
+            raise UserAlreadyExists()
+        return self
+
+    def get_verification_token(self):
+        if get_current_time().minute > self.verification_token_time + VERIFICATION_TOKEN_EXPIRATION_TIME:
+            self.verification_token = uuid.uuid4()
+            self.verification_token_time = get_current_time()
+            self.email_sent = False
+            self.save()
+        return self.verification_token
 
 class Category(models.Model):
     # todo check for is it possible to have same name for different users how db stores it
