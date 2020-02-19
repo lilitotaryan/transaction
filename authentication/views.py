@@ -193,6 +193,7 @@ class UserAddress(APIView):
 @error_handler
 def verify(request):
     user = request.user
+    print(user.email_sent)
     if not user.email_sent:
         verification_token = user.get_verification_token()
         send_verification_email(user.email, verification_token)
@@ -204,6 +205,8 @@ def verify(request):
         if token.is_valid():
             if not token.check_token(token.validated_data):
                 raise InvalidEmailValidationToken()
+        user.email_sent = False
+        user.save()
         raise InvalidEmailValidationToken()
     user.is_verified = True
     user.save()

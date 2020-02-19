@@ -37,7 +37,7 @@ def send_verification_email(email, token):
     send_mail(
         'EventNet account validation email',
         'For verifying you account please input the verification token in our website. Token: '+ str(token),
-        'lilitotaryan@gmail.com',
+        'otaryanlilit@gmail.com',
         [str(email)],
-        fail_silently=True,
+        fail_silently=False,
     )

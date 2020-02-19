@@ -119,7 +119,7 @@ class CustomUser(AbstractUser):
         return self
 
     def get_verification_token(self):
-        if get_current_time().minute > self.verification_token_time + VERIFICATION_TOKEN_EXPIRATION_TIME:
+        if get_current_time().minute > self.verification_token_time.minute + VERIFICATION_TOKEN_EXPIRATION_TIME:
             self.verification_token = uuid.uuid4()
             self.verification_token_time = get_current_time()
             self.email_sent = False
