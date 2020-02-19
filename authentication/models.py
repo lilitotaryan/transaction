@@ -29,6 +29,8 @@ class Address(models.Model):
         kwargs["hash"] = hash
         super().objects.create(**kwargs)
 
+    class Meta:
+        verbose_name_plural = "Addresses"
 
 class CustomUserManager(UserManager):
 
@@ -64,6 +66,7 @@ class CustomUserManager(UserManager):
 
 
 class CustomUser(AbstractUser):
+
     username = None
     email = models.EmailField(max_length=200, blank=False, default=None, unique=True)
     password = models.CharField(max_length=200, blank=False, default=None)
@@ -131,10 +134,11 @@ class CustomUser(AbstractUser):
         self.save()
         return self.verification_token
 
+
 class Category(models.Model):
     # todo check for is it possible to have same name for different users how db stores it
     name = models.CharField(max_length=100, blank=False, default=None, unique=True)
-    description = models.CharField(max_length=500)
+    description = models.CharField(max_length=500, blank=True)
     user = models.ForeignKey(CustomUser, on_delete=False, null=True)
 
     def serialize(self):
@@ -142,6 +146,8 @@ class Category(models.Model):
                 "description": self.description
                 }
 
+    class Meta:
+        verbose_name_plural = "Categories"
 
 class CreditCard(models.Model):
     card_number = models.CharField(max_length=100, blank=False, default=None, unique=True)

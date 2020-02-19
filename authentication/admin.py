@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Session
+from .models import CustomUser, Session, Category, Address
+
 
 @admin.register(CustomUser)
 class CustomUser(admin.ModelAdmin):
@@ -13,5 +14,12 @@ class CustomUser(admin.ModelAdmin):
 class Session(admin.ModelAdmin):
     list_display = ['token', 'user', 'is_expired']
 
-# class StateAdmin(admin.ModelAdmin):
-#     inlines = (CustomUser, )
+
+@admin.register(Category)
+class Category(admin.ModelAdmin):
+    list_display = ['name']
+
+
+@admin.register(Address)
+class Address(admin.ModelAdmin):
+    list_display = ['hash', 'address1', 'city']

@@ -39,7 +39,7 @@ class User(APIView):
 
     @error_handler
     def get(self, request):
-        return response(request.user.serialize())
+        return response(data=request.user.serialize())
 
     @error_handler
     def delete(self, request):
@@ -107,6 +107,7 @@ class Login(APIView):
                 }
                 return response(data=data)
             raise InvalidUsernamePassword()
+        raise UserDataNotValid()
 
 
 class Logout(APIView):
@@ -186,6 +187,7 @@ class UserAddress(APIView):
 
 
 class EmailVerification(APIView):
+
     permission_classes = [ApiTokenPermission, LoggedInNotVerifiedPermission, SessionExpiredPermission]
 
     @error_handler
